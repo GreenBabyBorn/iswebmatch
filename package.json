@@ -10,7 +10,6 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@grammyjs/router": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",
@@ -20,12 +19,11 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@grammyjs/chat-members": "^1.0.12",
     "@grammyjs/conversations": "^1.2.0",
     "@grammyjs/files": "^1.0.4",
-    "@grammyjs/menu": "^1.2.1",
     "@prisma/client": "^5.7.1",
+    "@types/node": "^20.10.6",
     "dotenv": "^16.3.1",
-    "grammy": "^1.20.2"
+    "grammy": "^1.19.3"
   }
 }
