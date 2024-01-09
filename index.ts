@@ -8,6 +8,7 @@ import {
   GrammyError,
   HttpError,
   Keyboard,
+  NextFunction,
   session,
   SessionFlavor,
 } from "grammy";
@@ -18,20 +19,24 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { FileApiFlavor, FileFlavor, hydrateFiles } from "@grammyjs/files";
+import { PrismaAdapter } from "@grammyjs/storage-prisma";
+import { EventEmitter } from "events";
+import { Menu } from "@grammyjs/menu";
 
-type MyContext = FileFlavor<Context> &
-  SessionFlavor<SessionData> &
+interface SessionData {
+  // user: Partial<User>;
+  myProfile: Partial<Profile>;
+  profiles: Array<Profile>;
+}
+
+type MyContext = SessionFlavor<SessionData> &
+  FileFlavor<Context> &
   ConversationFlavor;
 
 type MyConversation = Conversation<MyContext>;
 
-interface SessionData {
-  userId: number;
-  myProfile: Partial<Profile>;
-  profiles: object;
-}
-
 const prisma = new PrismaClient();
+
 const bot = new Bot<MyContext, FileApiFlavor<Api>>(
   process.env.BOT_TOKEN as string
 );
@@ -39,13 +44,50 @@ bot.api.config.use(hydrateFiles(bot.token));
 
 function initial(): SessionData {
   return {
-    userId: 0,
+    // user: {},
     myProfile: {},
-    profiles: {},
+    profiles: [],
   };
 }
-bot.use(session({ initial }));
+
+// Stores data per user.
+function getSessionKey(ctx: Context): string | undefined {
+  // Give every user their personal session storage
+  // (will be shared across groups and in their private chat)
+  return ctx.from?.id.toString();
+}
+
+const emitter = new EventEmitter();
+
+emitter.addListener("like", () => {
+  // console.log(args);
+  emitter.emit("listener", "fasdfasdf");
+});
+
+bot.use(
+  session({
+    initial,
+    getSessionKey,
+    storage: new PrismaAdapter<SessionData>(prisma.session),
+  })
+);
+
 bot.use(conversations());
+bot.use(async (ctx: MyContext, next: NextFunction): Promise<void> => {
+  const match = await prisma.match.findFirst({
+    where: {
+      toId: ctx.session.myProfile.platformId,
+    },
+  });
+
+  if (match) {
+    await ctx.reply("fffffffff");
+    await next();
+  }
+ 
+});
+
+// // определяем эмиттер событий
 
 async function formFill(conversation: MyConversation, ctx: MyContext) {
   await ctx.reply("Сколько тебе лет?", {
@@ -98,7 +140,6 @@ async function formFill(conversation: MyConversation, ctx: MyContext) {
   );
   const media = await conversation.waitFor(":media");
   const file = await media.getFile();
-  console.log(file);
 
   await conversation.external(async () => {
     // let user = await prisma.user.findUnique({
@@ -113,9 +154,10 @@ async function formFill(conversation: MyConversation, ctx: MyContext) {
         interest: labelsKeyboardInterest.indexOf(interest),
         city: city,
         name: name,
-        description: description,
-        media: file.file_id as string,
-        userId: ctx.session.userId,
+        description: description === "Пропустить" ? "" : description,
+        media: file.file_id,
+        platformName: "tg",
+        platformId: ctx.from?.id.toString() as string,
       },
     });
     ctx.session.myProfile = newProfile;
@@ -125,9 +167,7 @@ async function formFill(conversation: MyConversation, ctx: MyContext) {
     reply_markup: { remove_keyboard: true },
   });
 
-  const getMedia = await ctx.api.getFile(
-    ctx.session.myProfile.media as string
-  );
+  const getMedia = await ctx.api.getFile(ctx.session.myProfile.media as string);
   const isVideoMedia = (getMedia.file_path as string).includes("videos");
 
   await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
@@ -160,7 +200,6 @@ async function formFill(conversation: MyConversation, ctx: MyContext) {
   if (confirm === labelsKeyboardConfirm[1]) {
     await profileMain(conversation, ctx);
   }
-  
 }
 
 async function formFillAgain(conversation: MyConversation, ctx: MyContext) {
@@ -227,13 +266,12 @@ async function formFillAgain(conversation: MyConversation, ctx: MyContext) {
 
   const media = await conversation.waitFor([":media", ":text"]);
   // let file: any = null;
-  let mediaValue:  string | undefined;
+  let mediaValue: string | undefined;
   if (media.message?.text === labelsKeyboardMedia[0]) {
     mediaValue = undefined;
   } else {
-    
     const file = await media.getFile();
-    mediaValue = file.file_id as string;
+    mediaValue = file.file_id;
     console.log(file);
   }
 
@@ -250,7 +288,7 @@ async function formFillAgain(conversation: MyConversation, ctx: MyContext) {
         name: name,
         description: description === "Пропустить" ? "" : description,
         media: mediaValue as Partial<string>,
-        userId: ctx.session.userId,
+        platformId: ctx.session.myProfile.platformId as string,
       },
     });
     ctx.session.myProfile = newProfile;
@@ -260,9 +298,7 @@ async function formFillAgain(conversation: MyConversation, ctx: MyContext) {
     reply_markup: { remove_keyboard: true },
   });
 
-  const getMedia = await ctx.api.getFile(
-    ctx.session.myProfile.media as string
-  );
+  const getMedia = await ctx.api.getFile(ctx.session.myProfile.media as string);
   const isVideoMedia = (getMedia.file_path as string).includes("videos");
 
   await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
@@ -307,23 +343,121 @@ async function profileMain(conversation: MyConversation, ctx: MyContext) {
   const mainChoice = await conversation.form.select(["1", "2", "3", "4"]);
 
   if (mainChoice === "1") {
-     await formFillAgain(conversation, ctx);
+    await formFillAgain(conversation, ctx);
     // if (fillAgain) await profileMain(conversation, ctx);
   } else if (mainChoice === "2") {
     await ctx.reply("Скоро");
     await profileMain(conversation, ctx);
+  } else if (mainChoice === "4") {
+    await ctx.reply("✨🔍");
+    await showNewProfiles(conversation, ctx);
   }
 }
 
 async function showNewProfiles(conversation: MyConversation, ctx: MyContext) {
-  await ctx.reply('');
+  for (let i = 0; i < ctx.session.profiles.length; i++) {
+    const getMedia = await ctx.api.getFile(ctx.session.profiles[i].media);
+    const isVideoMedia = (getMedia.file_path as string).includes("videos");
+    await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
+      ctx.session.profiles[i].media,
+      {
+        reply_markup: keyboardRate,
+
+        caption: `${ctx.session.profiles[i].name}, ${
+          ctx.session.profiles[i].age
+        }, ${ctx.session.profiles[i].city}  ${
+          ctx.session.profiles[i].description
+            ? "- " + ctx.session.profiles[i].name
+            : ""
+        }`,
+      }
+    );
+
+    const rate = await conversation.form.select(["❤️", "👎", "💤"]);
+    if (rate === "💤") {
+      await stopShow(conversation, ctx);
+    }
+    if (rate === "👎") {
+      continue;
+    }
+    if (rate === "❤️") {
+      await conversation.external(async () => {
+        await prisma.match.create({
+          data: {
+            fromId: ctx.session.myProfile.platformId as string,
+            toId: ctx.session.profiles[i].platformId,
+          },
+        });
+
+        emitter.emit("like", ctx.session.profiles[i].platformId);
+      });
+
+      await ctx.api.sendMessage(
+        Number(ctx.session.profiles[i].platformId),
+        "Вы кому-то понравились!",
+        { reply_markup: keyboardRate }
+      );
+
+      // const getMediaMe = await ctx.api.getFile(
+      //   ctx.session.myProfile.media as string
+      // );
+      // const isVideoMediaMe = (getMediaMe.file_path as string).includes(
+      //   "videos"
+      // );
+
+      // const replyRate = await ctx.api[
+      //   isVideoMediaMe ? "sendVideo" : "sendPhoto"
+      // ](Number(user!.fromId), ctx.session.myProfile.media as string, {
+      //   reply_markup: keyboardRate,
+
+      //   caption: `${
+      //     "name" in ctx.session.myProfile ? ctx.session.myProfile.name : ""
+      //   }, ${
+      //     "age" in ctx.session.myProfile ? ctx.session.myProfile.age : ""
+      //   }, ${
+      //     "city" in ctx.session.myProfile ? ctx.session.myProfile.city : ""
+      //   } - ${
+      //     "description" in ctx.session.myProfile
+      //       ? ctx.session.myProfile.description
+      //       : ""
+      //   }`,
+      // });
+
+      // const replyRate = await conversation.waitFrom(user!.fromId);
+      // console.log(replyRate)
+    }
+  }
+
   return;
+}
+
+const labelsKeyboardStop = ["1", "2", "3"];
+const buttonRowsStop = labelsKeyboardStop.map((label) => [
+  Keyboard.text(label),
+]);
+const keyboardStop = Keyboard.from(buttonRowsStop)
+  .toFlowed(labelsKeyboardStop.length)
+  .resized()
+  .oneTime();
+
+async function stopShow(conversation: MyConversation, ctx: MyContext) {
+  await ctx.reply("Подождем пока кто-то увидит твою анкету");
+  await ctx.reply(
+    "1. Смотреть анкеты. \n2. Моя анкета. \n3. Я больше не хочу никого искать.",
+    { reply_markup: keyboardStop }
+  );
+
+  const stop = await conversation.form.select(labelsKeyboardStop);
+  if (stop === labelsKeyboardStop[0]) {
+    await showNewProfiles(conversation, ctx);
+  }
 }
 
 bot.use(createConversation(formFill));
 bot.use(createConversation(formFillAgain));
 bot.use(createConversation(profileMain));
 bot.use(createConversation(showNewProfiles));
+bot.use(createConversation(stopShow));
 
 const labelsKeyboardSex = ["Я девушка", "Я парень"];
 const buttonRowsSex = labelsKeyboardSex.map((label) => [Keyboard.text(label)]);
@@ -336,10 +470,12 @@ const labelsKeyboardInterest = ["Девушки", "Парни", "Не важно
 const buttonRowsInterest = labelsKeyboardInterest.map((label) => [
   Keyboard.text(label),
 ]);
+
 const keyboardInterest = Keyboard.from(buttonRowsInterest)
   .toFlowed(labelsKeyboardInterest.length)
   .resized()
   .oneTime();
+
 const keyboardDescriprion = new Keyboard()
   .text("Пропустить")
   .row()
@@ -355,48 +491,59 @@ const keyboardProfile = new Keyboard()
   .resized()
   .oneTime();
 
-const profile = async (ctx: CommandContext<MyContext>) => {
-  let user = await prisma.user.findUnique({
-    where: {
-      fromId: ctx.from?.id,
-    },
-  });
+const keyboardRate = new Keyboard()
+  .add()
+  .text("❤️")
+  .text("👎")
+  // .text("3")
+  .text("💤")
+  .row()
+  .resized()
+  .oneTime();
 
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        fromId: ctx.from?.id as number,
-        firstName: "first_name" in ctx.chat ? ctx.chat?.first_name : "",
-        username: "username" in ctx.chat ? (ctx.chat?.username as string) : "",
-      },
-    });
-  }
-  ctx.session.userId = user.id;
+const main = async (ctx: CommandContext<MyContext>) => {
+  // let user = await prisma.user.findUnique({
+  //   where: {
+  //     userTelegramId: ctx.from?.id,
+  //   },
+  // });
+
+  // if (!user) {
+  //   user = await prisma.user.create({
+  //     data: {
+  //       userTelegramId: ctx.from?.id as number,
+  //       firstName: "first_name" in ctx.chat ? ctx.chat?.first_name : "",
+  //       username: "username" in ctx.chat ? (ctx.chat?.username as string) : "",
+  //     },
+  //   });
+  // }
+  // ctx.session.user = user;
+
   const profile = await prisma.profile.findFirst({
     where: {
-      userId: user.id,
+      platformId: ctx.from?.id.toString(),
+      platformName: "tg",
     },
   });
   if (!profile) {
     await ctx.conversation.enter("formFill");
     return;
   }
+
   ctx.session.myProfile = profile;
   await ctx.reply("Ваша анкета:");
 
   const getMedia = await ctx.api.getFile(ctx.session.myProfile.media as string);
-  const isVideoMedia =  (getMedia.file_path as string).includes("videos");
+  const isVideoMedia = (getMedia.file_path as string).includes("videos");
 
   await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
     ctx.session.myProfile.media as string,
     {
-      caption: `${
-        "name" in ctx.session.myProfile ? ctx.session.myProfile.name : ""
-      }, ${"age" in ctx.session.myProfile ? ctx.session.myProfile.age : ""}, ${
-        "city" in ctx.session.myProfile ? ctx.session.myProfile.city : ""
-      } - ${
-        "description" in ctx.session.myProfile
-          ? ctx.session.myProfile.description
+      caption: `${ctx.session.myProfile.name}, ${ctx.session.myProfile.age}, ${
+        ctx.session.myProfile.city
+      } ${
+        ctx.session.myProfile.description
+          ? "- " + ctx.session.myProfile.description
           : ""
       }`,
     }
@@ -413,11 +560,27 @@ const profile = async (ctx: CommandContext<MyContext>) => {
 };
 
 bot.command("start", async (ctx) => {
-  await profile(ctx);
+  await main(ctx);
+});
+
+const menu = new Menu("my-menu-identifier")
+  .text("A", (ctx) => ctx.reply("You pressed A!"))
+  .row()
+  .text("B", (ctx) => ctx.reply("You pressed B!"));
+
+bot.use(menu);
+
+bot.command("s", async (ctx) => {
+  await ctx.reply("Check out this menu:", {});
 });
 
 bot.command("myprofile", async (ctx) => {
-  await profile(ctx);
+  await main(ctx);
+  // emitter.addListener("listener", (args) => {
+  //   console.log(args);
+  //   void ctx.reply('asdf')
+  // });
+ 
 });
 
 bot.catch((err) => {

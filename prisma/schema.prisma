@@ -10,35 +10,46 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         Int       @id @default(autoincrement())
-  firstName  String?
-  fromId Int    @unique   
-  username   String
-  Profile    Profile[]
-}
+// model User {
+//   id        Int       @id @default(autoincrement())
+//   firstName String?
+//   // userTelegramId BigInt    
+//   username  String
+//   profiles  Profile[]
+// }
 
 model Profile {
-  id          Int     @id @default(autoincrement())
-  user        User    @relation(fields: [userId], references: [id])
-  published   Boolean @default(true)
-  name        String
-  media       String
-  age         Int
-  description String
-  city        String
-  sex         Int
-  interest    Int
-  userId      Int
+  id           Int     @id @default(autoincrement())
+  // user         User    @relation(fields: [userId], references: [id])
+  published    Boolean @default(true)
+  name         String
+  media        String
+  age          Int
+  description  String
+  city         String
+  sex          Int
+  interest     Int
+  platformId   String  @unique
+  platformName String
+  // fromId         Match?  @relation("from")
+  // toId           Match?  @relation("to")
 
-  fromId Match? @relation("from")
-  toId   Match? @relation("to")
+  matchesFrom Match[] @relation("from")
+  matchesTo   Match[] @relation("to")
 }
 
 model Match {
-  id     Int     @id @default(autoincrement())
-  from   Profile @relation("from", fields: [fromId], references: [id])
-  fromId Int     @unique
-  to     Profile @relation("to", fields: [toId], references: [id])
-  toId   Int     @unique
+  // id     Int     @id @default(autoincrement())
+  from   Profile @relation("from", fields: [fromId], references: [platformId])
+  fromId String
+  to     Profile @relation("to", fields: [toId], references: [platformId])
+  toId   String
+
+  @@unique([fromId, toId])
+}
+
+model Session {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
 }

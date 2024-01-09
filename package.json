@@ -21,9 +21,11 @@
   "dependencies": {
     "@grammyjs/conversations": "^1.2.0",
     "@grammyjs/files": "^1.0.4",
+    "@grammyjs/menu": "^1.2.1",
+    "@grammyjs/storage-prisma": "^2.4.1",
     "@prisma/client": "^5.7.1",
     "@types/node": "^20.10.6",
     "dotenv": "^16.3.1",
-    "grammy": "^1.19.3"
+    "grammy": "^1.20.3"
   }
 }
