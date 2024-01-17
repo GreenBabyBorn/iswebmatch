@@ -13,7 +13,7 @@ export const createServer = async (bot: CreateBot) => {
     //     }
     //   })
     
-    server.get(`/${bot.token}`,  (request, response) => {
+    server.get(`/${bot.token}`, async (request, response) => {
         const hostname = request.headers["x-forwarded-host"];
         console.log(hostname)
         if (typeof hostname === "string") {

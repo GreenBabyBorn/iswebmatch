@@ -4,41 +4,30 @@ import { Bot, GrammyError, HttpError, Keyboard, session } from "grammy";
 import { conversations, createConversation, } from "@grammyjs/conversations";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { EventEmitter } from "events";
-import { sequentialize } from "@grammyjs/runner";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createBot(token, options = {}) {
     const prisma = new PrismaClient();
     const bot = new Bot(token, {
-        client: {
-            canUseWebhookReply: (method) => method === "sendChatAction",
-        },
+    // client: {
+    //     canUseWebhookReply: (method) => method === "sendChatAction",
+    // },
     });
-    // bot.api.config.use(hydrateFiles(bot.token));
     function initial() {
         return {
-            // user: {},
+            isMatch: false,
             myProfile: {},
             profiles: [],
         };
     }
-    // Stores data per user.
     function getSessionKey(ctx) {
-        // Give every user their personal session storage
-        // (will be shared across groups and in their private chat)
         return ctx.from?.id.toString();
     }
-    const emitter = new EventEmitter();
-    emitter.addListener("like", () => {
-        // console.log(args);
-        emitter.emit("listener", "fasdfasdf");
-    });
-    bot.use(sequentialize(getSessionKey));
     bot.use(session({
         initial,
         getSessionKey,
         storage: new PrismaAdapter(prisma.session),
     }));
-    bot.use(conversations());
+    // bot.use(sequentialize(getSessionKey));
     async function formFill(conversation, ctx) {
         await ctx.reply("Сколько тебе лет?", {
             reply_markup: { remove_keyboard: true },
@@ -238,16 +227,20 @@ export function createBot(token, options = {}) {
         const mainChoice = await conversation.form.select(["1", "2", "3", "4"]);
         if (mainChoice === "1") {
             await formFillAgain(conversation, ctx);
+            return;
             // if (fillAgain) await profileMain(conversation, ctx);
         }
         else if (mainChoice === "2") {
             await ctx.reply("Скоро");
             await profileMain(conversation, ctx);
+            return;
         }
         else if (mainChoice === "4") {
             await ctx.reply("✨🔍");
             await showNewProfiles(conversation, ctx);
+            return;
         }
+        return;
     }
     async function showNewProfiles(conversation, ctx) {
         for (let i = 0; i < ctx.session.profiles.length; i++) {
@@ -263,48 +256,41 @@ export function createBot(token, options = {}) {
             if (rate === "💤") {
                 await stopShow(conversation, ctx);
             }
-            if (rate === "👎") {
+            else if (rate === "👎") {
                 continue;
             }
-            if (rate === "❤️") {
+            else if (rate === "❤️") {
                 await conversation.external(async () => {
-                    await prisma.match.create({
-                        data: {
-                            fromId: ctx.session.myProfile.platformId,
-                            toId: ctx.session.profiles[i].platformId,
-                        },
-                    });
-                    emitter.emit("like", ctx.session.profiles[i].platformId);
+                    // await prisma.match.create({
+                    //     data: {
+                    //         fromId: ctx.session.myProfile.platformId as string,
+                    //         toId: ctx.session.profiles[i].platformId,
+                    //     },
+                    // });
+                    emitter.emit('like', ctx.session.profiles[i].platformId);
                 });
-                await ctx.api.sendMessage(Number(ctx.session.profiles[i].platformId), "Вы кому-то понравились!", { reply_markup: keyboardRate });
-                // const getMediaMe = await ctx.api.getFile(
-                //   ctx.session.myProfile.media as string
-                // );
-                // const isVideoMediaMe = (getMediaMe.file_path as string).includes(
-                //   "videos"
-                // );
-                // const replyRate = await ctx.api[
-                //   isVideoMediaMe ? "sendVideo" : "sendPhoto"
-                // ](Number(user!.fromId), ctx.session.myProfile.media as string, {
-                //   reply_markup: keyboardRate,
-                //   caption: `${
-                //     "name" in ctx.session.myProfile ? ctx.session.myProfile.name : ""
-                //   }, ${
-                //     "age" in ctx.session.myProfile ? ctx.session.myProfile.age : ""
-                //   }, ${
-                //     "city" in ctx.session.myProfile ? ctx.session.myProfile.city : ""
-                //   } - ${
-                //     "description" in ctx.session.myProfile
-                //       ? ctx.session.myProfile.description
-                //       : ""
-                //   }`,
-                // });
-                // const replyRate = await conversation.waitFrom(user!.fromId);
-                // console.log(replyRate)
             }
+        }
+    }
+    async function stopShow(conversation, ctx) {
+        await ctx.reply("Подождем пока кто-то увидит твою анкету");
+        await ctx.reply("1. Смотреть анкеты. \n2. Моя анкета. \n3. Я больше не хочу никого искать.", { reply_markup: keyboardStop });
+        const stop = await conversation.form.select(labelsKeyboardStop);
+        if (stop === labelsKeyboardStop[0]) {
+            await showNewProfiles(conversation, ctx);
+            return;
+        }
+        else if (stop === labelsKeyboardStop[1]) {
+            await conversation.external(async () => {
+                await showMyProfile(ctx);
+                // await ctx.conversation.enter("profileMain");
+            });
+            await profileMain(conversation, ctx);
+            return;
         }
         return;
     }
+    bot.use(conversations());
     const labelsKeyboardStop = ["1", "2", "3"];
     const buttonRowsStop = labelsKeyboardStop.map((label) => [
         Keyboard.text(label),
@@ -313,19 +299,15 @@ export function createBot(token, options = {}) {
         .toFlowed(labelsKeyboardStop.length)
         .resized()
         .oneTime();
-    async function stopShow(conversation, ctx) {
-        await ctx.reply("Подождем пока кто-то увидит твою анкету");
-        await ctx.reply("1. Смотреть анкеты. \n2. Моя анкета. \n3. Я больше не хочу никого искать.", { reply_markup: keyboardStop });
-        const stop = await conversation.form.select(labelsKeyboardStop);
-        if (stop === labelsKeyboardStop[0]) {
-            await showNewProfiles(conversation, ctx);
-        }
-    }
-    bot.use(createConversation(formFill));
-    bot.use(createConversation(formFillAgain));
-    bot.use(createConversation(profileMain));
-    bot.use(createConversation(showNewProfiles));
-    bot.use(createConversation(stopShow));
+    bot.use(createConversation(profileMain))
+        .use(createConversation(formFill))
+        .use(createConversation(formFillAgain))
+        .use(createConversation(showNewProfiles))
+        .use(createConversation(stopShow));
+    // bot.use(async (ctx, next)=>{
+    //     console.log(await ctx.conversation.active())
+    //    await next()
+    // })
     const labelsKeyboardSex = ["Я девушка", "Я парень"];
     const buttonRowsSex = labelsKeyboardSex.map((label) => [Keyboard.text(label)]);
     const keyboardSex = Keyboard.from(buttonRowsSex)
@@ -362,22 +344,17 @@ export function createBot(token, options = {}) {
         .row()
         .resized()
         .oneTime();
+    const showMyProfile = async (ctx) => {
+        await ctx.reply("Ваша анкета:");
+        const getMedia = await ctx.api.getFile(ctx.session.myProfile.media);
+        const isVideoMedia = getMedia.file_path.includes("videos");
+        await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](ctx.session.myProfile.media, {
+            caption: `${ctx.session.myProfile.name}, ${ctx.session.myProfile.age}, ${ctx.session.myProfile.city} ${ctx.session.myProfile.description
+                ? "- " + ctx.session.myProfile.description
+                : ""}`,
+        });
+    };
     const main = async (ctx) => {
-        // let user = await prisma.user.findUnique({
-        //   where: {
-        //     userTelegramId: ctx.from?.id,
-        //   },
-        // });
-        // if (!user) {
-        //   user = await prisma.user.create({
-        //     data: {
-        //       userTelegramId: ctx.from?.id as number,
-        //       firstName: "first_name" in ctx.chat ? ctx.chat?.first_name : "",
-        //       username: "username" in ctx.chat ? (ctx.chat?.username as string) : "",
-        //     },
-        //   });
-        // }
-        // ctx.session.user = user;
         const profile = await prisma.profile.findFirst({
             where: {
                 platformId: ctx.from?.id.toString(),
@@ -389,14 +366,7 @@ export function createBot(token, options = {}) {
             return;
         }
         ctx.session.myProfile = profile;
-        await ctx.reply("Ваша анкета:");
-        const getMedia = await ctx.api.getFile(ctx.session.myProfile.media);
-        const isVideoMedia = getMedia.file_path.includes("videos");
-        await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](ctx.session.myProfile.media, {
-            caption: `${ctx.session.myProfile.name}, ${ctx.session.myProfile.age}, ${ctx.session.myProfile.city} ${ctx.session.myProfile.description
-                ? "- " + ctx.session.myProfile.description
-                : ""}`,
-        });
+        await showMyProfile(ctx);
         ctx.session.profiles = await prisma.profile.findMany({
             where: {
                 sex: ctx.session.myProfile?.interest === 3
@@ -404,17 +374,22 @@ export function createBot(token, options = {}) {
                     : ctx.session.myProfile?.interest,
             },
         });
+        // await ctx.conversation.exit()
         await ctx.conversation.enter("profileMain");
     };
     bot.command("start", async (ctx) => {
         await main(ctx);
     });
+    const emitter = new EventEmitter();
     bot.command("myprofile", async (ctx) => {
+        emitter.on("like", async (args) => {
+            console.log(args, ctx.session.myProfile.platformId, ctx.from?.id);
+            if (args === ctx.session.myProfile.platformId) {
+                await ctx.reply('Ты кому-то понравился!!!');
+            }
+        });
+        console.log(emitter.listeners('like'));
         await main(ctx);
-        // emitter.addListener("listener", (args) => {
-        //   console.log(args);
-        //   void ctx.reply('asdf')
-        // });
     });
     bot.catch((err) => {
         const ctx = err.ctx;
@@ -430,9 +405,6 @@ export function createBot(token, options = {}) {
             console.error("Unknown error:", e);
         }
     });
-    //  bot.api.setWebhook(`https://match.iswebdev.ru/${process.env.BOT_TOKEN as string}`, {
-    //     allowed_updates: API_CONSTANTS.ALL_UPDATE_TYPES,
-    //   })
     // const runner = run(bot);
     process.once("SIGINT", async () => {
         // await runner.stop()
