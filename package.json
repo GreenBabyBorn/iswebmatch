@@ -24,6 +24,7 @@
     "@grammyjs/conversations": "^1.2.0",
     "@grammyjs/files": "^1.0.4",
     "@grammyjs/menu": "^1.2.1",
+    "@grammyjs/router": "^2.0.0",
     "@grammyjs/runner": "^2.0.3",
     "@grammyjs/storage-prisma": "^2.4.1",
     "@prisma/client": "^5.7.1",
