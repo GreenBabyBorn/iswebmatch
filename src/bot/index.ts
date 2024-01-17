@@ -24,6 +24,7 @@ import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { EventEmitter } from "events";
 import { run, sequentialize } from "@grammyjs/runner";
 import { Router } from "@grammyjs/router";
+import { keyboardDescriprion, keyboardInterest, keyboardProfile, keyboardRate, keyboardSex, keyboardStop } from "./keyboards/index.js"
 
 type Options = {
     config?: Omit<BotConfig<Context>, "ContextConstructor">;
@@ -39,7 +40,7 @@ export function createBot(token: string, options: Options = {}) {
 
     type MyContext = SessionFlavor<SessionData> &
         FileFlavor<Context>;
-        // ConversationFlavor;
+    // ConversationFlavor;
 
     // type MyConversation = Conversation<MyContext>;
 
@@ -328,7 +329,7 @@ export function createBot(token: string, options: Options = {}) {
     //     );
 
     //     const mainChoice = await conversation.form.select(["1", "2", "3", "4"]);
-        
+
     //     if (mainChoice === "1") {
     //         await formFillAgain(conversation, ctx);
     //         return
@@ -404,7 +405,7 @@ export function createBot(token: string, options: Options = {}) {
     //             await showMyProfile(ctx);
     //             // await ctx.conversation.enter("profileMain");
     //         })
-            
+
     //         await profileMain(conversation, ctx);
     //         return;
     //     }
@@ -413,14 +414,7 @@ export function createBot(token: string, options: Options = {}) {
     // bot.use(conversations());
 
 
-    const labelsKeyboardStop = ["1", "2", "3"];
-    const buttonRowsStop = labelsKeyboardStop.map((label) => [
-        Keyboard.text(label),
-    ]);
-    const keyboardStop = Keyboard.from(buttonRowsStop)
-        .toFlowed(labelsKeyboardStop.length)
-        .resized()
-        .oneTime();
+
 
     // bot.use(createConversation(profileMain))
     //     .use(createConversation(formFill))
@@ -433,47 +427,7 @@ export function createBot(token: string, options: Options = {}) {
     //    await next()
     // })
 
-    const labelsKeyboardSex = ["Я девушка", "Я парень"];
-    const buttonRowsSex = labelsKeyboardSex.map((label) => [Keyboard.text(label)]);
-    const keyboardSex = Keyboard.from(buttonRowsSex)
-        .toFlowed(labelsKeyboardSex.length)
-        .resized()
-        .oneTime();
 
-    const labelsKeyboardInterest = ["Девушки", "Парни", "Не важно"];
-    const buttonRowsInterest = labelsKeyboardInterest.map((label) => [
-        Keyboard.text(label),
-    ]);
-
-    const keyboardInterest = Keyboard.from(buttonRowsInterest)
-        .toFlowed(labelsKeyboardInterest.length)
-        .resized()
-        .oneTime();
-
-    const keyboardDescriprion = new Keyboard()
-        .text("Пропустить")
-        .row()
-        .resized()
-        .oneTime();
-
-    const keyboardProfile = new Keyboard()
-        .text("1")
-        .text("2")
-        .text("3")
-        .text("4")
-        .row()
-        .resized()
-        .oneTime();
-
-    const keyboardRate = new Keyboard()
-        .add()
-        .text("❤️")
-        .text("👎")
-        // .text("3")
-        .text("💤")
-        .row()
-        .resized()
-        .oneTime();
     const showMyProfile = async (ctx: MyContext) => {
         await ctx.reply("Ваша анкета:");
 
