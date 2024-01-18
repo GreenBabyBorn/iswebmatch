@@ -1,17 +1,12 @@
 import "dotenv/config";
-import { PrismaClient, type Profile } from "@prisma/client";
 import {
     Api,
     Bot,
-    CommandContext,
     Context,
     GrammyError,
     HttpError,
-    Keyboard,
     session,
-    SessionFlavor,
     BotConfig,
-    API_CONSTANTS
 } from "grammy";
 // import {
 //     type Conversation,
@@ -21,10 +16,13 @@ import {
 // } from "@grammyjs/conversations";
 import { FileApiFlavor, FileFlavor, hydrateFiles } from "@grammyjs/files";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
-import { EventEmitter } from "events";
 import { run, sequentialize } from "@grammyjs/runner";
 import { Router } from "@grammyjs/router";
 import { keyboardDescriprion, keyboardInterest, keyboardProfile, keyboardRate, keyboardSex, keyboardStop } from "./keyboards/index.js"
+import { composer } from "./composers/index.js";
+import { CustomContext } from "./types/CustomContext.js";
+import { SessionData } from "./types/SessionData.js";
+import { prisma } from "./prisma/index.js";
 
 type Options = {
     config?: Omit<BotConfig<Context>, "ContextConstructor">;
@@ -32,21 +30,9 @@ type Options = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createBot(token: string, options: Options = {}) {
-    interface SessionData {
-        isMatch: false;
-        myProfile: Partial<Profile>;
-        profiles: Array<Profile>;
-    }
-
-    type MyContext = SessionFlavor<SessionData> &
-        FileFlavor<Context>;
     // ConversationFlavor;
-
     // type MyConversation = Conversation<MyContext>;
-
-    const prisma = new PrismaClient()
-
-    const bot = new Bot<MyContext, FileApiFlavor<Api>>(
+    const bot = new Bot<CustomContext, FileApiFlavor<Api>>(
         token,
         {
             // client: {
@@ -58,9 +44,7 @@ export function createBot(token: string, options: Options = {}) {
 
     function initial(): SessionData {
         return {
-            isMatch: false,
-            myProfile: {},
-            profiles: [],
+            globalRoutes: 'profile'
         };
     }
 
@@ -76,9 +60,7 @@ export function createBot(token: string, options: Options = {}) {
         })
     );
 
-
     // bot.use(sequentialize(getSessionKey));
-
 
     /**
      * Conversation
@@ -413,9 +395,6 @@ export function createBot(token: string, options: Options = {}) {
     // }
     // bot.use(conversations());
 
-
-
-
     // bot.use(createConversation(profileMain))
     //     .use(createConversation(formFill))
     //     .use(createConversation(formFillAgain))
@@ -427,72 +406,7 @@ export function createBot(token: string, options: Options = {}) {
     //    await next()
     // })
 
-
-    const showMyProfile = async (ctx: MyContext) => {
-        await ctx.reply("Ваша анкета:");
-
-        const getMedia = await ctx.api.getFile(ctx.session.myProfile.media as string);
-        const isVideoMedia = (getMedia.file_path as string).includes("videos");
-
-        await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-            ctx.session.myProfile.media as string,
-            {
-                caption: `${ctx.session.myProfile.name}, ${ctx.session.myProfile.age}, ${ctx.session.myProfile.city
-                    } ${ctx.session.myProfile.description
-                        ? "- " + ctx.session.myProfile.description
-                        : ""
-                    }`,
-            }
-        );
-    }
-    const main = async (ctx: CommandContext<MyContext>) => {
-
-        const profile = await prisma.profile.findFirst({
-            where: {
-                platformId: ctx.from?.id.toString(),
-                platformName: "tg",
-            },
-        });
-        if (!profile) {
-            // await ctx.conversation.enter("formFill");
-            return;
-        }
-
-        ctx.session.myProfile = profile;
-        await showMyProfile(ctx);
-        ctx.session.profiles = await prisma.profile.findMany({
-            where: {
-                sex:
-                    ctx.session.myProfile?.interest === 3
-                        ? undefined
-                        : ctx.session.myProfile?.interest,
-            },
-        });
-
-        // await ctx.conversation.exit()
-        // await ctx.conversation.enter("profileMain");
-
-
-    };
-
-    bot.command("start", async (ctx) => {
-        await main(ctx);
-    });
-
-    const emitter = new EventEmitter();
-    bot.command("myprofile", async (ctx) => {
-        emitter.on("like", async (args) => {
-            console.log(args, ctx.session.myProfile.platformId, ctx.from?.id);
-            if (args === ctx.session.myProfile.platformId) {
-                await ctx.reply('Ты кому-то понравился!!!')
-
-            }
-        });
-
-        console.log(emitter.listeners('like',));
-        await main(ctx);
-
-    });
+    bot.use(composer);
 
     bot.catch((err) => {
         const ctx = err.ctx;
@@ -506,7 +420,6 @@ export function createBot(token: string, options: Options = {}) {
             console.error("Unknown error:", e);
         }
     });
-
     // const runner = run(bot);
 
     process.once("SIGINT", async () => {

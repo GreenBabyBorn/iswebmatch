@@ -23,13 +23,11 @@
   "dependencies": {
     "@grammyjs/conversations": "^1.2.0",
     "@grammyjs/files": "^1.0.4",
-    "@grammyjs/menu": "^1.2.1",
     "@grammyjs/router": "^2.0.0",
     "@grammyjs/runner": "^2.0.3",
     "@grammyjs/storage-prisma": "^2.4.1",
     "@prisma/client": "^5.7.1",
     "@types/node": "^20.10.6",
-    "bull": "^4.12.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "grammy": "^1.20.3"
