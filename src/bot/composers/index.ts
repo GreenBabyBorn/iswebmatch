@@ -3,6 +3,11 @@ import { CustomContext } from "../types/CustomContext.js";
 import EventEmitter from "events";
 import { prisma } from "../prisma/index.js";
 
+
+import { keyboardProfile } from "../keyboards/index.js";
+import { router as profile   } from "../routers/profile.js";
+import { router as fillProfile   } from "../routers/fillProfile.js";
+
 const composer = new Composer<CustomContext>();
 
 const showMyProfile = async (ctx: CustomContext) => {
@@ -21,7 +26,7 @@ const showMyProfile = async (ctx: CustomContext) => {
     );
 }
 
-const main = async (ctx: CommandContext<CustomContext>) => {
+export const main = async (ctx: CustomContext) => {
     const profile = await prisma.profile.findFirst({
         where: {
             platformId: ctx.from?.id.toString(),
@@ -29,12 +34,15 @@ const main = async (ctx: CommandContext<CustomContext>) => {
         },
     });
     if (!profile) {
-        // await ctx.conversation.enter("formFill");
+        await ctx.reply("Сколько тебе лет?", {
+            reply_markup: { remove_keyboard: true },
+        });
+        ctx.session.route = "fillProfileAge";
         return;
     }
 
     ctx.session.myProfile = profile;
-    await showMyProfile(ctx);
+    // await showMyProfile(ctx);
     ctx.session.profiles = await prisma.profile.findMany({
         where: {
             sex:
@@ -44,9 +52,17 @@ const main = async (ctx: CommandContext<CustomContext>) => {
         },
     });
 
+    await showMyProfile(ctx);
+    await ctx.reply(
+                "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+                { reply_markup: keyboardProfile }
+            );
+    ctx.session.route = "profile";
     // await ctx.conversation.exit()
     // await ctx.conversation.enter("profileMain");
 };
+
+
 
 composer.command("start", async (ctx) => {
     await main(ctx);
@@ -54,16 +70,27 @@ composer.command("start", async (ctx) => {
 
 const emitter = new EventEmitter();
 composer.command("myprofile", async (ctx) => {
-    emitter.on("like", async (args) => {
-        console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
-        if (args === ctx.session.myProfile!.platformId) {
-            await ctx.reply('Ты кому-то понравился!!!')
+    // emitter.on("like", async (args) => {
+    //     console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
+    //     if (args === ctx.session.myProfile!.platformId) {
+    //         await ctx.reply('Ты кому-то понравился!!!')
 
-        }
-    });
+    //     }
+    // });
+    // console.log(emitter.listeners('like',));
 
-    console.log(emitter.listeners('like',));
+
     await main(ctx);
+   
 });
+
+
+
+// router.otherwise(async (ctx)=>{
+//     await ctx.reply("Нет такого варианта ответа")
+// })
+
+composer.use(profile)
+composer.use(fillProfile)
 
 export { composer };

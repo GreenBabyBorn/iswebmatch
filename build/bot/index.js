@@ -14,7 +14,7 @@ export function createBot(token, options = {}) {
     });
     function initial() {
         return {
-            globalRoutes: 'profile'
+            route: 'idle'
         };
     }
     function getSessionKey(ctx) {

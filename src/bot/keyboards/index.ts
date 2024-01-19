@@ -1,15 +1,16 @@
 import {
     Keyboard,
 } from "grammy";
+import { CustomContext } from "../types/CustomContext.js";
 
-const labelsKeyboardSex = ["Я девушка", "Я парень"];
+export const labelsKeyboardSex = ["Я девушка", "Я парень"];
 const buttonRowsSex = labelsKeyboardSex.map((label) => [Keyboard.text(label)]);
 export const keyboardSex = Keyboard.from(buttonRowsSex)
     .toFlowed(labelsKeyboardSex.length)
     .resized()
     .oneTime();
 
-const labelsKeyboardInterest = ["Девушки", "Парни", "Не важно"];
+export const labelsKeyboardInterest = ["Девушки", "Парни", "Не важно"];
 const buttonRowsInterest = labelsKeyboardInterest.map((label) => [
     Keyboard.text(label),
 ]);
@@ -52,3 +53,23 @@ export const keyboardStop = Keyboard.from(buttonRowsStop)
     .toFlowed(labelsKeyboardStop.length)
     .resized()
     .oneTime();
+
+
+// export const labelsKeyboardName: string[] = [];
+// const buttonRowsName = labelsKeyboardName.map((label) => [Keyboard.text(label)]);
+// export const keyboardName = Keyboard.from(buttonRowsName).resized().oneTime();
+export const keyboardName = (ctx: CustomContext) => {
+    const labelsKeyboardName: string[] = [ctx.from?.first_name as string];
+    const buttonRowsName = labelsKeyboardName.map((label) => [Keyboard.text(label)]);
+    return Keyboard.from(buttonRowsName).resized().oneTime();
+}
+
+export const labelsKeyboardConfirmProfile = ["Да", "Изменить анкету"];
+const buttonRowsConfirmProfile = labelsKeyboardConfirmProfile.map((label) => [
+    Keyboard.text(label.toString()),
+]);
+export const keyboardConfirmProfile = Keyboard.from(buttonRowsConfirmProfile)
+    .toFlowed(labelsKeyboardConfirmProfile.length)
+    .resized()
+    .oneTime()
+    .append();

@@ -17,7 +17,6 @@ import {
 import { FileApiFlavor, FileFlavor, hydrateFiles } from "@grammyjs/files";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { run, sequentialize } from "@grammyjs/runner";
-import { Router } from "@grammyjs/router";
 import { keyboardDescriprion, keyboardInterest, keyboardProfile, keyboardRate, keyboardSex, keyboardStop } from "./keyboards/index.js"
 import { composer } from "./composers/index.js";
 import { CustomContext } from "./types/CustomContext.js";
@@ -44,7 +43,7 @@ export function createBot(token: string, options: Options = {}) {
 
     function initial(): SessionData {
         return {
-            globalRoutes: 'profile'
+            route: 'idle'
         };
     }
 
