@@ -42,12 +42,12 @@ export const keyboardRate = new Keyboard()
   .resized()
   .oneTime();
 
-const labelsKeyboardStop = ["1", "2", "3"];
-const buttonRowsStop = labelsKeyboardStop.map((label) => [
+const labelsKeyboardPause = ["1", "2", "3"];
+const buttonRowsPause = labelsKeyboardPause.map((label) => [
   Keyboard.text(label),
 ]);
-export const keyboardStop = Keyboard.from(buttonRowsStop)
-  .toFlowed(labelsKeyboardStop.length)
+export const keyboardPause = Keyboard.from(buttonRowsPause)
+  .toFlowed(labelsKeyboardPause.length)
   .resized()
   .oneTime();
 

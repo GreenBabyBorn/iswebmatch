@@ -11,12 +11,13 @@ import {
 import { FileApiFlavor, FileFlavor, hydrateFiles } from "@grammyjs/files";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { run, sequentialize } from "@grammyjs/runner";
-import { composer } from "./composers/index.js";
+import { composer, showMyProfile } from "./composers/index.js";
 import { CustomContext } from "./types/CustomContext.js";
 import { SessionData } from "./types/SessionData.js";
 import { prisma } from "./prisma/index.js";
 import { router as profile } from "./routers/profile.js";
 import { router as fillProfile } from "./routers/fillProfile.js";
+import { router as showProfiles } from "./routers/showProfiles.js";
 
 type Options = {
   config?: Omit<BotConfig<Context>, "ContextConstructor">;
@@ -34,7 +35,7 @@ export function createBot(token: string, options: Options = {}) {
     return {
       myProfile: {
         id: 0,
-        published: false,
+        published: true,
         name: "",
         media: "",
         age: 0,
@@ -409,6 +410,7 @@ export function createBot(token: string, options: Options = {}) {
 
   bot.use(profile);
   bot.use(fillProfile);
+  bot.use(showProfiles);
 
   bot.use(composer);
 

@@ -14,13 +14,11 @@ export const showMyProfile = async (ctx: CustomContext) => {
   await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
     ctx.session.myProfile!.media as string,
     {
-      caption: `${ctx.session.myProfile!.name}, ${ctx.session.myProfile!.age}, ${
-        ctx.session.myProfile!.city
-      } ${
-        ctx.session.myProfile!.description
+      caption: `${ctx.session.myProfile!.name}, ${ctx.session.myProfile!.age}, ${ctx.session.myProfile!.city
+        } ${ctx.session.myProfile!.description
           ? "- " + ctx.session.myProfile!.description
           : ""
-      }`,
+        }`,
     },
   );
 };
@@ -41,14 +39,7 @@ export const main = async (ctx: CustomContext) => {
   }
 
   ctx.session.myProfile = profile;
-  ctx.session.profiles = await prisma.profile.findMany({
-    where: {
-      sex:
-        ctx.session.myProfile?.interest === 3
-          ? undefined
-          : ctx.session.myProfile?.interest,
-    },
-  });
+
 
   await ctx.reply("Ваша анкета:");
   await showMyProfile(ctx);
@@ -63,18 +54,14 @@ composer.command("start", async (ctx) => {
   await main(ctx);
 });
 
-const emitter = new EventEmitter();
+export const emitter = new EventEmitter();
 composer.command("myprofile", async (ctx) => {
-  // emitter.on("like", async (args) => {
-  //     console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
-  //     if (args === ctx.session.myProfile!.platformId) {
-  //         await ctx.reply('Ты кому-то понравился!!!')
 
-  //     }
-  // });
-  // console.log(emitter.listeners('like',));
   await main(ctx);
 });
+composer.use(async (ctx) => {
+ 
+})
 
 // router.otherwise(async (ctx)=>{
 //     await ctx.reply("Нет такого варианта ответа")
