@@ -8,20 +8,15 @@ import {
     session,
     BotConfig,
 } from "grammy";
-// import {
-//     type Conversation,
-//     type ConversationFlavor,
-//     conversations,
-//     createConversation,
-// } from "@grammyjs/conversations";
 import { FileApiFlavor, FileFlavor, hydrateFiles } from "@grammyjs/files";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { run, sequentialize } from "@grammyjs/runner";
-import { keyboardDescriprion, keyboardInterest, keyboardProfile, keyboardRate, keyboardSex, keyboardStop } from "./keyboards/index.js"
 import { composer } from "./composers/index.js";
 import { CustomContext } from "./types/CustomContext.js";
 import { SessionData } from "./types/SessionData.js";
 import { prisma } from "./prisma/index.js";
+import { router as profile   } from "./routers/profile.js";
+import { router as fillProfile   } from "./routers/fillProfile.js";
 
 type Options = {
     config?: Omit<BotConfig<Context>, "ContextConstructor">;
@@ -29,8 +24,7 @@ type Options = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createBot(token: string, options: Options = {}) {
-    // ConversationFlavor;
-    // type MyConversation = Conversation<MyContext>;
+
     const bot = new Bot<CustomContext, FileApiFlavor<Api>>(
         token,
         {
@@ -43,7 +37,21 @@ export function createBot(token: string, options: Options = {}) {
 
     function initial(): SessionData {
         return {
+            myProfile: {
+                id: 0,
+                published: false,
+                name: "",
+                media: "",
+                age: 0,
+                description: "",
+                city: "",
+                sex: 0,
+                interest: 0,
+                platformId: "",
+                platformName: "tg"
+            },
             route: 'idle'
+            
         };
     }
 
@@ -404,6 +412,9 @@ export function createBot(token: string, options: Options = {}) {
     //     console.log(await ctx.conversation.active())
     //    await next()
     // })
+
+    bot.use(profile)
+    bot.use(fillProfile)
 
     bot.use(composer);
 

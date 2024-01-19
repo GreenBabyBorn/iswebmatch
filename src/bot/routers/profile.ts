@@ -1,5 +1,6 @@
 import { Router } from "@grammyjs/router";
 import { CustomContext } from "../types/CustomContext.js";
+import { keyboardAge } from "../keyboards/index.js";
 
 const router = new Router<CustomContext>((ctx) => ctx.session.route);
 
@@ -8,7 +9,7 @@ const profile = router.route("profile");
 profile.on('msg:text', async (ctx) => {
     if (ctx.msg.text === '1') {
         await ctx.reply("Сколько тебе лет?", {
-            reply_markup: { remove_keyboard: true },
+            reply_markup: ctx.session.myProfile ? keyboardAge(ctx) : undefined,
         });
         ctx.session.route = "fillProfileAge";
     }

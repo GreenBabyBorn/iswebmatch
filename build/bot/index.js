@@ -3,10 +3,10 @@ import { Bot, GrammyError, HttpError, session, } from "grammy";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { composer } from "./composers/index.js";
 import { prisma } from "./prisma/index.js";
+import { router as profile } from "./routers/profile.js";
+import { router as fillProfile } from "./routers/fillProfile.js";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createBot(token, options = {}) {
-    // ConversationFlavor;
-    // type MyConversation = Conversation<MyContext>;
     const bot = new Bot(token, {
     // client: {
     //     canUseWebhookReply: (method) => method === "sendChatAction",
@@ -14,6 +14,19 @@ export function createBot(token, options = {}) {
     });
     function initial() {
         return {
+            myProfile: {
+                id: 0,
+                published: false,
+                name: "",
+                media: "",
+                age: 0,
+                description: "",
+                city: "",
+                sex: 0,
+                interest: 0,
+                platformId: "",
+                platformName: "tg"
+            },
             route: 'idle'
         };
     }
@@ -333,6 +346,8 @@ export function createBot(token, options = {}) {
     //     console.log(await ctx.conversation.active())
     //    await next()
     // })
+    bot.use(profile);
+    bot.use(fillProfile);
     bot.use(composer);
     bot.catch((err) => {
         const ctx = err.ctx;
