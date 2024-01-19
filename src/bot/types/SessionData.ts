@@ -13,7 +13,9 @@ interface SessionData {
     | "fillProfileName"
     | "fillProfileDescription"
     | "fillProfileMedia"
-    | "fillProfileConfirm";
+    | "fillProfileConfirm"
+    | "updateProfileDescription"
+    | "updateProfileMedia";
 }
 
 export { SessionData };

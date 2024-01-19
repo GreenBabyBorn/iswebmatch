@@ -17,8 +17,75 @@ import { Profile } from "@prisma/client";
 import { prisma } from "../prisma/index.js";
 import { main, showMyProfile } from "../composers/index.js";
 
-// let profileData: Partial<Profile> = {};
 const router = new Router<CustomContext>((ctx) => ctx.session.route);
+
+const updateProfileDescription = router.route("updateProfileDescription");
+updateProfileDescription.on("msg:text", async (ctx: CustomContext) => {
+  let description = ctx.msg?.text;
+  if (description === 'Вернуться назад') {
+    await ctx.reply("Так выглядит твоя анкета:");
+    await showMyProfile(ctx);
+    await ctx.reply(
+      "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+      { reply_markup: keyboardProfile },
+    );
+    ctx.session.route = "profile";
+    return;
+  }
+  const profile = await prisma.profile.update({
+    where: {
+      id: ctx.session.myProfile.id,
+    },
+    data: {
+      description: description
+    },
+  });
+  ctx.session.myProfile = profile
+  await ctx.reply("Так выглядит твоя анкета:");
+  await showMyProfile(ctx);
+  await ctx.reply(
+    "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+    { reply_markup: keyboardProfile },
+  );
+  ctx.session.route = "profile";
+})
+
+const updateProfileMedia = router.route("updateProfileMedia");
+updateProfileMedia.on(["msg:text", ":media"], async (ctx: CustomContext) => {
+
+
+  if (ctx.msg?.text === 'Вернуться назад') {
+    await ctx.reply("Так выглядит твоя анкета:");
+    await showMyProfile(ctx);
+    await ctx.reply(
+      "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+      { reply_markup: keyboardProfile },
+    );
+    ctx.session.route = "profile";
+    return;
+  }
+  if (!ctx.msg?.text) {
+    const file = await ctx.getFile();
+    const profile = await prisma.profile.update({
+      where: {
+        id: ctx.session.myProfile.id,
+      },
+      data: {
+        media: file.file_id
+      },
+    });
+    ctx.session.myProfile = profile
+    await ctx.reply("Так выглядит твоя анкета:");
+    await showMyProfile(ctx);
+    await ctx.reply(
+      "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+      { reply_markup: keyboardProfile },
+    );
+    ctx.session.route = "profile";
+  }
+
+
+})
 
 const fillProfileAge = router.route("fillProfileAge");
 fillProfileAge.on("msg:text", async (ctx: CustomContext) => {
@@ -157,10 +224,11 @@ fillProfileConfirm.on("msg:text", async (ctx: CustomContext) => {
     await main(ctx);
     // console.log(ctx.session.myProfile)
   } else if (confirm === labelsKeyboardConfirmProfile[1]) {
-    await ctx.reply("Сколько тебе лет?", {
-      reply_markup: { remove_keyboard: true },
-    });
-    ctx.session.route = "fillProfileAge";
+    await ctx.reply(
+      "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+      { reply_markup: keyboardProfile },
+    );
+    ctx.session.route = "profile";
   }
 });
 

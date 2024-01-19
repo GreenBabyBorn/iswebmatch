@@ -93,3 +93,9 @@ export const keyboardMedia = new Keyboard()
   .row()
   .resized()
   .oneTime();
+
+export const keyboardReturn = new Keyboard()
+  .text("Вернуться назад")
+  .row()
+  .resized()
+  .oneTime();
