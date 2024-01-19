@@ -7,70 +7,73 @@ import { keyboardProfile } from "../keyboards/index.js";
 const composer = new Composer<CustomContext>();
 
 export const showMyProfile = async (ctx: CustomContext) => {
-    
-    const getMedia = await ctx.api.getFile(ctx.session.myProfile!.media as string);
-    const isVideoMedia = (getMedia.file_path as string).includes("videos");
-    await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-        ctx.session.myProfile!.media as string,
-        {
-            caption: `${ctx.session.myProfile!.name}, ${ctx.session.myProfile!.age}, ${ctx.session.myProfile!.city
-                } ${ctx.session.myProfile!.description
-                    ? "- " + ctx.session.myProfile!.description
-                    : ""
-                }`,
-        }
-    );
-}
+  const getMedia = await ctx.api.getFile(
+    ctx.session.myProfile!.media as string,
+  );
+  const isVideoMedia = (getMedia.file_path as string).includes("videos");
+  await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
+    ctx.session.myProfile!.media as string,
+    {
+      caption: `${ctx.session.myProfile!.name}, ${ctx.session.myProfile!.age}, ${
+        ctx.session.myProfile!.city
+      } ${
+        ctx.session.myProfile!.description
+          ? "- " + ctx.session.myProfile!.description
+          : ""
+      }`,
+    },
+  );
+};
 
 export const main = async (ctx: CustomContext) => {
-    const profile = await prisma.profile.findFirst({
-        where: {
-            platformId: ctx.from?.id.toString(),
-            platformName: "tg",
-        },
+  const profile = await prisma.profile.findFirst({
+    where: {
+      platformId: ctx.from?.id.toString(),
+      platformName: "tg",
+    },
+  });
+  if (!profile) {
+    await ctx.reply("Сколько тебе лет?", {
+      reply_markup: { remove_keyboard: true },
     });
-    if (!profile) {
-        await ctx.reply("Сколько тебе лет?", {
-            reply_markup: { remove_keyboard: true },
-        });
-        ctx.session.route = "fillProfileAge";
-        return;
-    }
+    ctx.session.route = "fillProfileAge";
+    return;
+  }
 
-    ctx.session.myProfile = profile;
-    ctx.session.profiles = await prisma.profile.findMany({
-        where: {
-            sex:
-                ctx.session.myProfile?.interest === 3
-                    ? undefined
-                    : ctx.session.myProfile?.interest,
-        },
-    });
-    
-    await ctx.reply("Ваша анкета:");
-    await showMyProfile(ctx);
-    await ctx.reply(
-                "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
-                { reply_markup: keyboardProfile }
-            );
-    ctx.session.route = "profile";
+  ctx.session.myProfile = profile;
+  ctx.session.profiles = await prisma.profile.findMany({
+    where: {
+      sex:
+        ctx.session.myProfile?.interest === 3
+          ? undefined
+          : ctx.session.myProfile?.interest,
+    },
+  });
+
+  await ctx.reply("Ваша анкета:");
+  await showMyProfile(ctx);
+  await ctx.reply(
+    "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
+    { reply_markup: keyboardProfile },
+  );
+  ctx.session.route = "profile";
 };
 
 composer.command("start", async (ctx) => {
-    await main(ctx);
+  await main(ctx);
 });
 
 const emitter = new EventEmitter();
 composer.command("myprofile", async (ctx) => {
-    // emitter.on("like", async (args) => {
-    //     console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
-    //     if (args === ctx.session.myProfile!.platformId) {
-    //         await ctx.reply('Ты кому-то понравился!!!')
+  // emitter.on("like", async (args) => {
+  //     console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
+  //     if (args === ctx.session.myProfile!.platformId) {
+  //         await ctx.reply('Ты кому-то понравился!!!')
 
-    //     }
-    // });
-    // console.log(emitter.listeners('like',));
-    await main(ctx);
+  //     }
+  // });
+  // console.log(emitter.listeners('like',));
+  await main(ctx);
 });
 
 // router.otherwise(async (ctx)=>{

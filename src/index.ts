@@ -8,7 +8,6 @@ const bot = createBot(process.env.BOT_TOKEN as string);
 
 // await server.listen(3009)
 
-
 // if(process.env.NODE_ENV === 'production'){
 //   await bot.init();
 //   await bot.api.setWebhook(`https://match.iswebdev.ru/${process.env.BOT_TOKEN as string}`, {
@@ -17,5 +16,3 @@ const bot = createBot(process.env.BOT_TOKEN as string);
 
 // }
 bot.start();
-
-
