@@ -32,68 +32,59 @@ profile.on("msg:text", async (ctx) => {
       },
     );
   } else if (ctx.msg.text === "4") {
-    await ctx.reply("✨🔍");
-    if(!ctx.session.shownProfile) ctx.session.shownProfile = 0
-    emitter.on("like", async (args) => {
-      console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
-      if (args === ctx.session.myProfile!.platformId) {
-        await ctx.reply('Ты кому-то понравился!!!')
-  
-      }
+    if (!ctx.session.shownProfile) ctx.session.shownProfile = 0
+    if (!emitter.eventNames().includes(ctx.from?.id.toString() as string)) {
+      emitter.on(ctx.from?.id.toString() as string, async (args) => {
+        // console.log(args, ctx.session.myProfile!.platformId, ctx.from?.id);
+        if (args === ctx.session.myProfile!.platformId) {
+          await ctx.reply(`Отлично! Надеюсь хорошо проведете время ;) Начинай общаться 👉 <a href="tg://user?id=${ctx.from?.id}">${ctx.from?.first_name}</a>`, { parse_mode: "HTML",link_preview_options:{
+            is_disabled: true
+          } })
+
+        }
+      });
+    }
+    
+    console.log(emitter.eventNames().includes(ctx.from?.id.toString() as string))
+    console.log(emitter.listeners(ctx.from?.id.toString() as string));
+    await ctx.reply("✨🔍", {
+      reply_markup: keyboardRate
     });
-    console.log(emitter.listeners('like'));
+
     await startShowProfile(ctx)
-    // ctx.session.profiles = await prisma.profile.findMany({
-    //   where: {
-    //     sex:
-    //       ctx.session.myProfile?.interest === 3
-    //         ? undefined
-    //         : ctx.session.myProfile?.interest,
-    //   },
-
-    // });
-    // if(!ctx.session.shownProfile) ctx.session.shownProfile = 0
-    // const getMedia = await ctx.api.getFile(ctx.session.profiles![ctx.session.shownProfile].media);
-    //       const isVideoMedia = (getMedia.file_path as string).includes("videos");
-    //       await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-    //           ctx.session.profiles![ctx.session.shownProfile].media,
-    //           {
-    //               reply_markup: keyboardRate,
-    //               caption: `${ctx.session.profiles![ctx.session.shownProfile].name}, ${ctx.session.profiles![ctx.session.shownProfile].age
-    //                   }, ${ctx.session.profiles![ctx.session.shownProfile].city}  ${ctx.session.profiles![ctx.session.shownProfile].description
-    //                       ? "- " + ctx.session.profiles![ctx.session.shownProfile].description
-    //                       : ""
-    //                   }`,
-    //           }
-    //       );
-    // ctx.session.route = "showNewProfiles"
-
-    // console.log(ctx.session.profiles)
   }
 });
 
- const startShowProfile = async (ctx: CustomContext) => {
+const startShowProfile = async (ctx: CustomContext) => {
   ctx.session.profiles = await prisma.profile.findMany({
-      where: {
-          sex:
-              ctx.session.myProfile?.interest === 3
-                  ? undefined
-                  : ctx.session.myProfile?.interest,
+
+    where: {
+      platformId: {
+        not: ctx.from?.id.toString() as string
       },
+      // NOT: {
+      //   platformId: ctx.from?.id.toString()
+      // },
+      sex:
+        ctx.session.myProfile?.interest === 3
+          ? undefined
+          : ctx.session.myProfile?.interest,
+
+    },
 
   });
   const getMedia = await ctx.api.getFile(ctx.session.profiles![ctx.session.shownProfile!].media);
   const isVideoMedia = (getMedia.file_path as string).includes("videos");
   await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-      ctx.session.profiles![ctx.session.shownProfile!].media,
-      {
-          reply_markup: keyboardRate,
-          caption: `${ctx.session.profiles![ctx.session.shownProfile!].name}, ${ctx.session.profiles![ctx.session.shownProfile!].age
-              }, ${ctx.session.profiles![ctx.session.shownProfile!].city}  ${ctx.session.profiles![ctx.session.shownProfile!].description
-                  ? "- " + ctx.session.profiles![ctx.session.shownProfile!].description
-                  : ""
-              }`,
-      }
+    ctx.session.profiles![ctx.session.shownProfile!].media,
+    {
+      reply_markup: keyboardRate,
+      caption: `${ctx.session.profiles![ctx.session.shownProfile!].name}, ${ctx.session.profiles![ctx.session.shownProfile!].age
+        }, ${ctx.session.profiles![ctx.session.shownProfile!].city}  ${ctx.session.profiles![ctx.session.shownProfile!].description
+          ? "- " + ctx.session.profiles![ctx.session.shownProfile!].description
+          : ""
+        }`,
+    }
   );
   ctx.session.route = "showNewProfiles"
 }

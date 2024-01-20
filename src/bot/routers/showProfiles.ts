@@ -28,6 +28,9 @@ showNewProfiles.on('msg:text', async (ctx) => {
     else if (ctx.msg.text === "👎") {
         ctx.session.profiles = await prisma.profile.findMany({
             where: {
+                platformId: {
+                    not: ctx.from?.id.toString() as string
+                  },
                 sex:
                     ctx.session.myProfile?.interest === 3
                         ? undefined
@@ -40,8 +43,6 @@ showNewProfiles.on('msg:text', async (ctx) => {
             ctx.session.shownProfile = 0
         }
         let count = ctx.session.shownProfile!
-        console.log(ctx.session.profiles!.length, count)
-    
         const getMedia = await ctx.api.getFile(ctx.session.profiles![count].media);
         const isVideoMedia = (getMedia.file_path as string).includes("videos");
         await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
@@ -58,7 +59,7 @@ showNewProfiles.on('msg:text', async (ctx) => {
         ctx.session.route = "showNewProfiles"
     }
     else if (ctx.msg.text === "❤️") {
-        emitter.emit('like', ctx.session.profiles![ctx.session.shownProfile!].platformId)
+        emitter.emit(ctx.session.profiles![ctx.session.shownProfile!].platformId, ctx.session.profiles![ctx.session.shownProfile!].platformId)
     }
 
 })

@@ -50,21 +50,40 @@ export const main = async (ctx: CustomContext) => {
   ctx.session.route = "profile";
 };
 
+const emitter = new EventEmitter();
+
 composer.command("start", async (ctx) => {
   await main(ctx);
 });
 
-export const emitter = new EventEmitter();
 composer.command("myprofile", async (ctx) => {
-
   await main(ctx);
 });
-composer.use(async (ctx) => {
- 
-})
+
+
+composer.command("test", async (ctx) => {
+  const profiles = await prisma.profile.findMany({
+
+    where: {
+      platformId: {
+        not: ctx.from?.id.toString() as string
+      },
+      // NOT: {
+      //   platformId: ctx.from?.id.toString()
+      // },
+      sex:
+        ctx.session.myProfile?.interest === 3
+          ? undefined
+          : ctx.session.myProfile?.interest,
+
+    },
+
+  });
+  console.log(profiles)
+});
 
 // router.otherwise(async (ctx)=>{
 //     await ctx.reply("Нет такого варианта ответа")
 // })
 
-export { composer };
+export { composer, emitter };

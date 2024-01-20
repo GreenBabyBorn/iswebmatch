@@ -39,8 +39,7 @@ export const keyboardRate = new Keyboard()
   .text("👎")
   .text("💤")
   .row()
-  .resized()
-  .oneTime();
+  .resized();
 
 const labelsKeyboardPause = ["1", "2", "3"];
 const buttonRowsPause = labelsKeyboardPause.map((label) => [
@@ -48,8 +47,7 @@ const buttonRowsPause = labelsKeyboardPause.map((label) => [
 ]);
 export const keyboardPause = Keyboard.from(buttonRowsPause)
   .toFlowed(labelsKeyboardPause.length)
-  .resized()
-  .oneTime();
+  .resized();
 
 export const keyboardName = (ctx: CustomContext) => {
   const labelsKeyboardName: string[] = [
