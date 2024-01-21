@@ -18,6 +18,8 @@ import { prisma } from "./prisma/index.js";
 import { router as profile } from "./routers/profile.js";
 import { router as fillProfile } from "./routers/fillProfile.js";
 import { router as showProfiles } from "./routers/showProfiles.js";
+import { router as matches } from "./routers/matches.js";
+
 
 type Options = {
   config?: Omit<BotConfig<Context>, "ContextConstructor">;
@@ -60,7 +62,7 @@ export function createBot(token: string, options: Options = {}) {
   /**
    * * Выполните упорядочивание перед доступом к данным сеанса
    */
-  bot.use(sequentialize(getSessionKey));
+  // bot.use(sequentialize(getSessionKey));
 
   bot.use(
     session({
@@ -70,11 +72,13 @@ export function createBot(token: string, options: Options = {}) {
     }),
   );
 
+  
   bot.use(composer);
 
   /**
    * Подключение роутеров
    */
+  bot.use(matches);
   bot.use(profile);
   bot.use(fillProfile);
   bot.use(showProfiles);
@@ -95,14 +99,14 @@ export function createBot(token: string, options: Options = {}) {
     }
   });
 
-  const runner = run(bot);
+  // const runner = run(bot);
 
   process.once("SIGINT", async () => {
-    await runner.stop()
+    // await runner.stop()
     await bot.stop();
   });
   process.once("SIGTERM", async () => {
-    await runner.stop()
+    // await runner.stop()
     await bot.stop();
   });
 

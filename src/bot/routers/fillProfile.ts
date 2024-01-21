@@ -217,7 +217,10 @@ fillProfileConfirm.on("msg:text", async (ctx: CustomContext) => {
     } else {
       ctx.session.myProfile.platformId = ctx.from?.id.toString() as string;
       await prisma.profile.create({
-        data: ctx.session.myProfile! as Profile,
+        data: {
+          ...ctx.session.myProfile! as Profile,
+          id: undefined
+        },
       });
     }
 

@@ -3,7 +3,8 @@ import { type Profile } from "@prisma/client";
 interface SessionData {
   myProfile: Profile;
   profiles?: Array<Profile>;
-  shownProfile?: number;
+  shownMatchProfile?: number;
+  activeMatchProfile?: Profile;
   route:
     | "idle"
     | "profile"
@@ -19,6 +20,7 @@ interface SessionData {
     | "updateProfileMedia"
     | "showNewProfiles"
     | "pauseShow"
+    | "chooseMatchesProfiles"
     | "showMatchesProfiles";
 }
 

@@ -97,3 +97,12 @@ export const keyboardReturn = new Keyboard()
   .row()
   .resized()
   .oneTime();
+
+
+  export const keyboardChooseMatch = (ctx: CustomContext) => {
+    const labels: string[] = ["1", "2 💤"];
+    const buttonRows = labels.map((label) => [
+      Keyboard.text(label.toString()),
+    ]);
+    return {keyboard: Keyboard.from(buttonRows).resized().oneTime().toFlowed(labels.length), labels: labels};
+  };

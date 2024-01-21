@@ -19,4 +19,4 @@ const bot = createBot(process.env.BOT_TOKEN as string);
 /**
  * Раскоментировать если не используется @grammyjs/runner
  */
-// bot.start();
+bot.start();

@@ -1,7 +1,7 @@
 import { Router } from "@grammyjs/router";
 import { CustomContext } from "../types/CustomContext.js";
-import { keyboardPause, keyboardProfile, keyboardRate } from "../keyboards/index.js";
-import { emitter, showProfile } from "../composers/index.js";
+import { keyboardChooseMatch, keyboardPause, keyboardProfile, keyboardRate } from "../keyboards/index.js";
+import { showProfile } from "../composers/index.js";
 import { prisma } from "../prisma/index.js";
 import { startShowProfile } from "./profile.js";
 
@@ -9,8 +9,8 @@ const router = new Router<CustomContext>((ctx) => {
     return ctx.session.route
 });
 
-const showNewProfiles = router.route("showNewProfiles");
 
+const showNewProfiles = router.route("showNewProfiles");
 
 showNewProfiles.on('msg:text', async (ctx) => {
     if (ctx.msg.text === "💤") {
@@ -23,6 +23,11 @@ showNewProfiles.on('msg:text', async (ctx) => {
     }
     else if (ctx.msg.text === "👎") {
         ctx.session.profiles = await prisma.profile.findMany({
+            take: 1,
+            skip: 1,
+            cursor: {
+                platformId: ctx.session.profiles![0].platformId
+            },
             where: {
                 platformId: {
                     not: ctx.from?.id.toString() as string
@@ -34,20 +39,31 @@ showNewProfiles.on('msg:text', async (ctx) => {
             },
 
         });
-        ctx.session.shownProfile! += 1;
-        if (ctx.session.profiles!.length === ctx.session.shownProfile!) {
-            ctx.session.shownProfile = 0
+        if (!ctx.session.profiles[0]) {
+            ctx.session.profiles = await prisma.profile.findMany({
+                take: 1,
+                where: {
+                    platformId: {
+                        not: ctx.from?.id.toString() as string
+                    },
+                    sex:
+                        ctx.session.myProfile?.interest === 3
+                            ? undefined
+                            : ctx.session.myProfile?.interest,
+
+                },
+            });
         }
-        let count = ctx.session.shownProfile!
-        const getMedia = await ctx.api.getFile(ctx.session.profiles![count].media);
+        // let count = ctx.session.shownProfile!
+        const getMedia = await ctx.api.getFile(ctx.session.profiles![0].media);
         const isVideoMedia = (getMedia.file_path as string).includes("videos");
         await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-            ctx.session.profiles![count].media,
+            ctx.session.profiles![0].media,
             {
                 reply_markup: keyboardRate,
-                caption: `${ctx.session.profiles![count].name}, ${ctx.session.profiles![count].age
-                    }, ${ctx.session.profiles![count].city}  ${ctx.session.profiles![count].description
-                        ? "- " + ctx.session.profiles![count].description
+                caption: `${ctx.session.profiles![0].name}, ${ctx.session.profiles![0].age
+                    }, ${ctx.session.profiles![0].city}  ${ctx.session.profiles![0].description
+                        ? "- " + ctx.session.profiles![0].description
                         : ""
                     }`,
             }
@@ -58,14 +74,71 @@ showNewProfiles.on('msg:text', async (ctx) => {
         await prisma.match.create({
             data: {
                 fromId: ctx.session.myProfile.platformId,
-                toId: ctx.session.profiles![ctx.session.shownProfile!].platformId
+                toId: ctx.session.profiles![0].platformId
             }
         })
 
         // * Вызов события лайка 
-        emitter.emit(ctx.session.profiles![ctx.session.shownProfile!].platformId, ctx.session.profiles![ctx.session.shownProfile!].platformId)
+        let matches = await prisma.match.findMany({
+            where: {
+                toId: ctx.session.profiles![0].platformId
+            },
+            include: {
+                from: {
+                    select: {
+                        name: true,
+                        sex: true,
+                        age: true,
+                        interest: true,
+                        description: true,
+                        city: true,
+                        media: true,
+                        platformId: true,
+                        published: true
+                    }
+                }
+            }
 
+        })
+        // console.log(matches)
+
+        const getSessionUser = await prisma.session.findFirst({
+            where: {
+                key: ctx.session.profiles![0].platformId
+            }
+        })
+        let parsedSessionUser = JSON.parse(getSessionUser!.value)
+        // ! Добавить проверку, если пользователь уже просматривает людей которые поставли ему лайк, то не запускать следующий сценарий
+        parsedSessionUser.route = 'chooseMatchesProfiles'
+        await prisma.session.update({
+            where: {
+                key: ctx.session.profiles![0].platformId
+            },
+            data: {
+                value: JSON.stringify(parsedSessionUser)
+            }
+
+        })
+
+        let matchText = ''
+        let matchWhoText = ''
+        if (ctx.session.myProfile.interest === 0 && matches.length > 1) matchText = 'девушкам', matchWhoText = 'их'
+        else if (ctx.session.myProfile.interest === 0) matchText = 'девушке', matchWhoText = 'её'
+        if (ctx.session.myProfile.interest === 1 && matches.length > 1) matchText = 'парням', matchWhoText = 'их'
+        else if (ctx.session.myProfile.interest === 1) matchText = 'парню', matchWhoText = 'его'
+
+        await ctx.api.sendMessage(ctx.session.profiles![0].platformId, `Ты ${ctx.session.myProfile.sex ? 'понравился' : 'понравилась'} ${matches.length} ${matchText}, показать ${matchWhoText}?
+          \n1. Показать.\n2. Не хочу больше никого смотреть.`, {
+            reply_markup: keyboardChooseMatch(ctx).keyboard
+        })
+
+        //---------------------------------
         ctx.session.profiles = await prisma.profile.findMany({
+            take: 1,
+            skip: 1,
+            cursor: {
+                platformId: ctx.session.profiles![0].platformId
+            },
             where: {
                 platformId: {
                     not: ctx.from?.id.toString() as string
@@ -77,25 +150,25 @@ showNewProfiles.on('msg:text', async (ctx) => {
             },
 
         });
-        ctx.session.shownProfile! += 1;
-        if (ctx.session.profiles!.length === ctx.session.shownProfile!) {
-            ctx.session.shownProfile = 0
-        }
-        let count = ctx.session.shownProfile!
 
-        const getMedia = await ctx.api.getFile(ctx.session.profiles![count].media);
-        const isVideoMedia = (getMedia.file_path as string).includes("videos");
-        await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-            ctx.session.profiles![count].media,
-            {
-                reply_markup: keyboardRate,
-                caption: `${ctx.session.profiles![count].name}, ${ctx.session.profiles![count].age
-                    }, ${ctx.session.profiles![count].city}  ${ctx.session.profiles![count].description
-                        ? "- " + ctx.session.profiles![count].description
-                        : ""
-                    }`,
-            }
-        );
+        if (!ctx.session.profiles[0]) {
+            ctx.session.profiles = await prisma.profile.findMany({
+                take: 1,
+                where: {
+                    platformId: {
+                        not: ctx.from?.id.toString() as string
+                    },
+                    sex:
+                        ctx.session.myProfile?.interest === 3
+                            ? undefined
+                            : ctx.session.myProfile?.interest,
+
+                },
+            });
+
+        }
+
+        await showProfile(ctx, ctx.session.profiles![0], true)
     }
 
 })
@@ -118,13 +191,6 @@ pauseShow.on('msg:text', async (ctx) => {
         ctx.session.route = "profile";
 
     }
-})
-
-
-const showMatchesProfiles = router.route("showMatchesProfiles");
-
-showMatchesProfiles.on('msg:text', async (ctx) => {
-    
 })
 
 export { router }

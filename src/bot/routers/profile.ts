@@ -31,10 +31,6 @@ profile.on("msg:text", async (ctx) => {
       },
     );
   } else if (ctx.msg.text === "4") {
-    if (!ctx.session.shownProfile) ctx.session.shownProfile = 0
-    
-    
-   
     await ctx.reply("✨🔍", {
       reply_markup: keyboardRate
     });
@@ -44,32 +40,23 @@ profile.on("msg:text", async (ctx) => {
 });
 
 const startShowProfile = async (ctx: CustomContext) => {
-  ctx.session.profiles = await prisma.profile.findMany({
-    where: {
-      platformId: {
-        not: ctx.from?.id.toString() as string
-      },
-      sex:
-        ctx.session.myProfile?.interest === 3
-          ? undefined
-          : ctx.session.myProfile?.interest,
+  if (!ctx.session.profiles![0]) {
+    ctx.session.profiles = await prisma.profile.findMany({
+      take: 1,
+      where: {
+        platformId: {
+          not: ctx.from?.id.toString() as string
+        },
+        sex:
+          ctx.session.myProfile?.interest === 3
+            ? undefined
+            : ctx.session.myProfile?.interest,
 
-    },
-  });
-  await showProfile(ctx, ctx.session.profiles![ctx.session.shownProfile!])
-  // const getMedia = await ctx.api.getFile(ctx.session.profiles![ctx.session.shownProfile!].media);
-  // const isVideoMedia = (getMedia.file_path as string).includes("videos");
-  // await ctx[isVideoMedia ? "replyWithVideo" : "replyWithPhoto"](
-  //   ctx.session.profiles![ctx.session.shownProfile!].media,
-  //   {
-  //     reply_markup: keyboardRate,
-  //     caption: `${ctx.session.profiles![ctx.session.shownProfile!].name}, ${ctx.session.profiles![ctx.session.shownProfile!].age
-  //       }, ${ctx.session.profiles![ctx.session.shownProfile!].city}  ${ctx.session.profiles![ctx.session.shownProfile!].description
-  //         ? "- " + ctx.session.profiles![ctx.session.shownProfile!].description
-  //         : ""
-  //       }`,
-  //   }
-  // );
+      },
+    });
+  }
+  await showProfile(ctx, ctx.session.profiles![0], true)
+
   ctx.session.route = "showNewProfiles"
 }
 
