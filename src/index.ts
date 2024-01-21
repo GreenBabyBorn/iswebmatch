@@ -1,7 +1,6 @@
 import { API_CONSTANTS } from "grammy";
 import { createBot } from "./bot/index.js";
 import { createServer } from "./server/index.js";
-// import { run } from "@grammyjs/runner";
 
 const bot = createBot(process.env.BOT_TOKEN as string);
 // const server = await createServer(bot);
@@ -15,4 +14,9 @@ const bot = createBot(process.env.BOT_TOKEN as string);
 //     })
 
 // }
-bot.start();
+
+
+/**
+ * Раскоментировать если не используется @grammyjs/runner
+ */
+// bot.start();

@@ -15,7 +15,7 @@ import {
 } from "../keyboards/index.js";
 import { Profile } from "@prisma/client";
 import { prisma } from "../prisma/index.js";
-import { main, showMyProfile } from "../composers/index.js";
+import { main, showProfile } from "../composers/index.js";
 
 const router = new Router<CustomContext>((ctx) => ctx.session.route);
 
@@ -24,7 +24,7 @@ updateProfileDescription.on("msg:text", async (ctx: CustomContext) => {
   let description = ctx.msg?.text;
   if (description === 'Вернуться назад') {
     await ctx.reply("Так выглядит твоя анкета:");
-    await showMyProfile(ctx);
+    await showProfile(ctx, ctx.session.myProfile!);
     await ctx.reply(
       "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
       { reply_markup: keyboardProfile },
@@ -42,7 +42,7 @@ updateProfileDescription.on("msg:text", async (ctx: CustomContext) => {
   });
   ctx.session.myProfile = profile
   await ctx.reply("Так выглядит твоя анкета:");
-  await showMyProfile(ctx);
+  await showProfile(ctx,ctx.session.myProfile!);
   await ctx.reply(
     "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
     { reply_markup: keyboardProfile },
@@ -56,7 +56,7 @@ updateProfileMedia.on(["msg:text", ":media"], async (ctx: CustomContext) => {
 
   if (ctx.msg?.text === 'Вернуться назад') {
     await ctx.reply("Так выглядит твоя анкета:");
-    await showMyProfile(ctx);
+    await showProfile(ctx, ctx.session.myProfile!);
     await ctx.reply(
       "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
       { reply_markup: keyboardProfile },
@@ -76,7 +76,7 @@ updateProfileMedia.on(["msg:text", ":media"], async (ctx: CustomContext) => {
     });
     ctx.session.myProfile = profile
     await ctx.reply("Так выглядит твоя анкета:");
-    await showMyProfile(ctx);
+    await showProfile(ctx, ctx.session.myProfile!);
     await ctx.reply(
       "1. Заполнить анкету заново. \n2. Изменить фото/видео. \n3. Изменить текст анкеты. \n4. Смотреть анкеты.",
       { reply_markup: keyboardProfile },
@@ -195,7 +195,7 @@ fillProfileMedia.on(["msg:media", "msg:text"], async (ctx: CustomContext) => {
   await ctx.reply("Все верно?", {
     reply_markup: keyboardConfirmProfile,
   });
-  await showMyProfile(ctx);
+  await showProfile(ctx, ctx.session.myProfile!);
 });
 
 const fillProfileConfirm = router.route("fillProfileConfirm");

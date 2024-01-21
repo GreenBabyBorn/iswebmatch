@@ -18,7 +18,8 @@ interface SessionData {
     | "updateProfileDescription"
     | "updateProfileMedia"
     | "showNewProfiles"
-    | "pauseShow";
+    | "pauseShow"
+    | "showMatchesProfiles";
 }
 
 export { SessionData };

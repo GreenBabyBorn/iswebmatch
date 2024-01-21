@@ -31,6 +31,9 @@ export function createBot(token: string, options: Options = {}) {
     // },
   });
 
+  /**
+   * Функция для инициализации сессии
+   */
   function initial(): SessionData {
     return {
       myProfile: {
@@ -54,6 +57,11 @@ export function createBot(token: string, options: Options = {}) {
     return ctx.from?.id.toString();
   }
 
+  /**
+   * * Выполните упорядочивание перед доступом к данным сеанса
+   */
+  bot.use(sequentialize(getSessionKey));
+
   bot.use(
     session({
       initial,
@@ -62,36 +70,39 @@ export function createBot(token: string, options: Options = {}) {
     }),
   );
 
-  // bot.use(sequentialize(getSessionKey));
-
-
   bot.use(composer);
 
+  /**
+   * Подключение роутеров
+   */
   bot.use(profile);
   bot.use(fillProfile);
   bot.use(showProfiles);
 
-
+  /**
+   * Перехватчик ошибок
+   */
   bot.catch((err) => {
     const ctx = err.ctx;
-    console.error(`Error while handling update ${ctx.update.update_id}:`);
+    console.error(`Ошибка при обработке обновления: ${ctx.update.update_id}:`);
     const e = err.error;
     if (e instanceof GrammyError) {
-      console.error("Error in request:", e.description);
+      console.error("Ошибка в запросе:", e.description);
     } else if (e instanceof HttpError) {
-      console.error("Could not contact Telegram:", e);
+      console.error("Не удалось связаться с Telegram:", e);
     } else {
-      console.error("Unknown error:", e);
+      console.error("Неизвестная ошибка:", e);
     }
   });
-  // const runner = run(bot);
+
+  const runner = run(bot);
 
   process.once("SIGINT", async () => {
-    // await runner.stop()
+    await runner.stop()
     await bot.stop();
   });
   process.once("SIGTERM", async () => {
-    // await runner.stop()
+    await runner.stop()
     await bot.stop();
   });
 
