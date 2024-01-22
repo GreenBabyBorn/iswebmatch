@@ -4,7 +4,8 @@ interface SessionData {
   myProfile: Profile;
   profiles?: Array<Profile>;
   shownMatchProfile?: number;
-  activeMatchProfile?: Profile;
+  activeMatchProfile?: any;
+
   route:
     | "idle"
     | "profile"
@@ -21,7 +22,8 @@ interface SessionData {
     | "showNewProfiles"
     | "pauseShow"
     | "chooseMatchesProfiles"
-    | "showMatchesProfiles";
+    | "showMatchesProfiles"
+    | "continueShowProfiles";
 }
 
 export { SessionData };

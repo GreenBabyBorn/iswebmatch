@@ -98,11 +98,20 @@ export const keyboardReturn = new Keyboard()
   .resized()
   .oneTime();
 
-
-  export const keyboardChooseMatch = (ctx: CustomContext) => {
-    const labels: string[] = ["1", "2 💤"];
-    const buttonRows = labels.map((label) => [
-      Keyboard.text(label.toString()),
-    ]);
-    return {keyboard: Keyboard.from(buttonRows).resized().oneTime().toFlowed(labels.length), labels: labels};
+export const keyboardChooseMatch = (ctx: CustomContext) => {
+  const labels: string[] = ["1", "2 💤"];
+  const buttonRows = labels.map((label) => [Keyboard.text(label.toString())]);
+  return {
+    keyboard: Keyboard.from(buttonRows)
+      .resized()
+      .oneTime()
+      .toFlowed(labels.length),
+    labels: labels,
   };
+};
+
+export const keyboardContinue = new Keyboard()
+  .text("Продолжить просмотр анкет")
+  .row()
+  .resized()
+  .oneTime();

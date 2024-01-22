@@ -20,7 +20,6 @@ import { router as fillProfile } from "./routers/fillProfile.js";
 import { router as showProfiles } from "./routers/showProfiles.js";
 import { router as matches } from "./routers/matches.js";
 
-
 type Options = {
   config?: Omit<BotConfig<Context>, "ContextConstructor">;
 };
@@ -51,6 +50,7 @@ export function createBot(token: string, options: Options = {}) {
         platformId: "",
         platformName: "tg",
       },
+      activeMatchProfile: [],
       route: "idle",
     };
   }
@@ -69,10 +69,9 @@ export function createBot(token: string, options: Options = {}) {
       initial,
       getSessionKey,
       storage: new PrismaAdapter<SessionData>(prisma.session),
-    }),
+    })
   );
 
-  
   bot.use(composer);
 
   /**

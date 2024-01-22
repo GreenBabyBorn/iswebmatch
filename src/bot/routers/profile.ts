@@ -1,6 +1,10 @@
 import { Router } from "@grammyjs/router";
 import { CustomContext } from "../types/CustomContext.js";
-import { keyboardAge, keyboardRate, keyboardReturn } from "../keyboards/index.js";
+import {
+  keyboardAge,
+  keyboardRate,
+  keyboardReturn,
+} from "../keyboards/index.js";
 import { prisma } from "../prisma/index.js";
 import { showProfile } from "../composers/index.js";
 
@@ -15,49 +19,45 @@ profile.on("msg:text", async (ctx) => {
     });
     ctx.session.route = "fillProfileAge";
   } else if (ctx.msg.text === "2") {
-    ctx.session.route = 'updateProfileMedia'
-    await ctx.reply(
-      `Теперь пришли фото или запиши видео 👍 (до 15 сек)`,
-      {
-        reply_markup: keyboardReturn
-      },
-    );
+    ctx.session.route = "updateProfileMedia";
+    await ctx.reply(`Теперь пришли фото или запиши видео 👍 (до 15 сек)`, {
+      reply_markup: keyboardReturn,
+    });
   } else if (ctx.msg.text === "3") {
-    ctx.session.route = 'updateProfileDescription'
+    ctx.session.route = "updateProfileDescription";
     await ctx.reply(
       `Расскажи о себе и кого хочешь найти, чем предлагаешь заняться. Это поможет лучше подобрать тебе компанию.`,
       {
         reply_markup: keyboardReturn,
-      },
+      }
     );
   } else if (ctx.msg.text === "4") {
     await ctx.reply("✨🔍", {
-      reply_markup: keyboardRate
+      reply_markup: keyboardRate,
     });
 
-    await startShowProfile(ctx)
+    await startShowProfile(ctx);
   }
 });
 
 const startShowProfile = async (ctx: CustomContext) => {
-  if (!ctx.session.profiles![0]) {
+  if (!ctx.session.profiles!) {
     ctx.session.profiles = await prisma.profile.findMany({
       take: 1,
       where: {
         platformId: {
-          not: ctx.from?.id.toString() as string
+          not: ctx.from?.id.toString() as string,
         },
         sex:
           ctx.session.myProfile?.interest === 3
             ? undefined
             : ctx.session.myProfile?.interest,
-
       },
     });
   }
-  await showProfile(ctx, ctx.session.profiles![0], true)
+  await showProfile(ctx, ctx.session.profiles![0], true);
 
-  ctx.session.route = "showNewProfiles"
-}
+  ctx.session.route = "showNewProfiles";
+};
 
 export { router, startShowProfile };
