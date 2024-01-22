@@ -152,10 +152,16 @@ showMatchesProfiles.on("msg:text", async (ctx) => {
       },
     });
 
+    const userTo = (await ctx.api.getChat(
+      ctx.session.activeMatchProfile![0].from.platformId
+    )) as Chat.PrivateGetChat;
+
     await ctx.reply(
-      `Отлично! Надеюсь хорошо проведете время ;) Начинай общаться 👉 <a href="${`tg://user?id=${
-        ctx.session.activeMatchProfile![0].from.platformId
-      }`}">${ctx.session.activeMatchProfile![0].from.name}</a>`,
+      `Отлично! Надеюсь хорошо проведете время ;) Начинай общаться 👉 <a href="${
+        !userTo.username
+          ? `tg://user?id=${ctx.session.activeMatchProfile![0].from.platformId}`
+          : `https://t.me/${userTo.username}`
+      }">${ctx.session.activeMatchProfile![0].from.name}</a>`,
       {
         parse_mode: "HTML",
         link_preview_options: {
@@ -163,11 +169,17 @@ showMatchesProfiles.on("msg:text", async (ctx) => {
         },
       }
     );
+
+    const userFrom = (await ctx.api.getChat(
+      ctx.session.myProfile!.platformId
+    )) as Chat.PrivateGetChat;
     // console.log((await ctx.api.getChat(ctx.session.activeMatchProfile!.platformId) as Chat.PrivateGetChat).has_private_forwards, (await ctx.api.getChat(ctx.session.myProfile.platformId) as Chat.PrivateGetChat).has_private_forwards)
     await ctx.api.sendMessage(
       ctx.session.activeMatchProfile![0].from.platformId,
-      `Есть взаимная симпатия! Начинай общаться 👉 <a href="tg://user?id=${
-        ctx.session.myProfile!.platformId
+      `Есть взаимная симпатия! Начинай общаться 👉 <a href="${
+        !userFrom.username
+          ? `tg://user?id=${ctx.session.activeMatchProfile![0].from.platformId}`
+          : `https://t.me/${userFrom.username}`
       }">${ctx.session.myProfile!.name}</a>`,
       {
         parse_mode: "HTML",

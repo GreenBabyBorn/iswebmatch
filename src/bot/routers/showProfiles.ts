@@ -108,17 +108,19 @@ showNewProfiles.on("msg:text", async (ctx) => {
         key: ctx.session.profiles![0].platformId,
       },
     });
-    let parsedSessionUser = JSON.parse(getSessionUser!.value);
-    // ! Добавить проверку, если пользователь уже просматривает людей которые поставли ему лайк, то не запускать следующий сценарий
-    parsedSessionUser.route = "chooseMatchesProfiles";
-    await prisma.session.update({
-      where: {
-        key: ctx.session.profiles![0].platformId,
-      },
-      data: {
-        value: JSON.stringify(parsedSessionUser),
-      },
-    });
+    if (getSessionUser) {
+      let parsedSessionUser = JSON.parse(getSessionUser!.value);
+      // ! Добавить проверку, если пользователь уже просматривает людей которые поставли ему лайк, то не запускать следующий сценарий
+      parsedSessionUser.route = "chooseMatchesProfiles";
+      await prisma.session.update({
+        where: {
+          key: ctx.session.profiles![0].platformId,
+        },
+        data: {
+          value: JSON.stringify(parsedSessionUser),
+        },
+      });
+    }
 
     let matchText = "";
     let matchWhoText = "";
